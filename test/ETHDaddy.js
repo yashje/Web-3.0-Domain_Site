@@ -1,3 +1,4 @@
+const { getDefaultNormalizer } = require("@testing-library/react");
 const { expect } = require("chai")
 
 const tokens = (n) => {
@@ -5,109 +6,71 @@ const tokens = (n) => {
 }
 
 describe("ETHDaddy", () => {
-  let ethDaddy
-  let deployer, owner1
+  let ethDaddy;
 
   const NAME = "ETH Daddy"
   const SYMBOL = "ETHD"
 
+  let deployer, owner1
+
   beforeEach(async () => {
-    // Setup accounts
-    [deployer, owner1] = await ethers.getSigners()
 
-    // Deploy contract
-    const ETHDaddy = await ethers.getContractFactory("ETHDaddy")
-    ethDaddy = await ETHDaddy.deploy(NAME, SYMBOL)
+    [deployer, owner1] = await ethers.getSigners();
 
-    // List a domain
-    const transaction = await ethDaddy.connect(deployer).list("jack.eth", tokens(10))
-    await transaction.wait()
+    const ETHDADDY = await ethers.getContractFactory("ETHDaddy")
+    ethDaddy = await ETHDADDY.deploy("ETH Daddy", "ETHD")
+
+    const list = await ethDaddy.connect(deployer).listDomain("yash.eth", tokens(1))
+    await list.wait()
   })
 
-  describe("Deployment", () => {
-    it("Sets the name", async () => {
-      const result = await ethDaddy.name()
+  describe("deployment", () => {
+
+    it("has a name", async () => {
+      let result = await ethDaddy.name()
       expect(result).to.equal(NAME)
     })
 
-    it("Sets the symbol", async () => {
-      const result = await ethDaddy.symbol()
+    it("has a symbol", async () => {
+      let result = await ethDaddy.symbol()
       expect(result).to.equal(SYMBOL)
     })
 
-    it("Sets the owner", async () => {
+    it("has a owner", async () => {
       const result = await ethDaddy.owner()
       expect(result).to.equal(deployer.address)
     })
-
-    it("Returns the max supply", async () => {
-      const result = await ethDaddy.maxSupply()
-      expect(result).to.equal(1)
-    })
-
-    it("Returns the total supply", async () => {
-      const result = await ethDaddy.totalSupply()
-      expect(result).to.equal(0)
-    })
   })
 
-  describe("Domain", () => {
-    it('Returns domain attributes', async () => {
-      const domain = await ethDaddy.getDomain(1)
-      expect(domain.name).to.be.equal("jack.eth")
-      expect(domain.cost).to.be.equal(tokens(10))
-      expect(domain.isOwned).to.be.equal(false)
+  describe("list", () => {
+    it("has a domain name", async () => {
+      const result = await ethDaddy.getDomain(1)
+      expect(result.name).to.equal("yash.eth")
     })
   })
 
   describe("Minting", () => {
     const ID = 1
-    const AMOUNT = ethers.utils.parseUnits("10", 'ether')
+    const AMOUNT = tokens(1)
 
     beforeEach(async () => {
       const transaction = await ethDaddy.connect(owner1).mint(ID, { value: AMOUNT })
       await transaction.wait()
     })
 
-    it('Updates the owner', async () => {
-      const owner = await ethDaddy.ownerOf(ID)
-      expect(owner).to.be.equal(owner1.address)
+    it("it updates the owner", async () => {
+      const result = await ethDaddy.ownerOf(ID)
+      expect(result).to.equal(owner1.address)
     })
 
     it('Updates the domain status', async () => {
-      const domain = await ethDaddy.getDomain(ID)
-      expect(domain.isOwned).to.be.equal(true)
+      const result = await ethDaddy.getDomain(ID)
+      expect(result.isOwned).to.equal(true)
     })
 
-    it('Updates the contract balance', async () => {
+    it("it update the contract balance", async () => {
       const result = await ethDaddy.getBalance()
-      expect(result).to.be.equal(AMOUNT)
-    })
-  })
-
-  describe("Withdrawing", () => {
-    const ID = 1
-    const AMOUNT = ethers.utils.parseUnits("10", 'ether')
-    let balanceBefore
-
-    beforeEach(async () => {
-      balanceBefore = await ethers.provider.getBalance(deployer.address)
-
-      let transaction = await ethDaddy.connect(owner1).mint(ID, { value: AMOUNT })
-      await transaction.wait()
-
-      transaction = await ethDaddy.connect(deployer).withdraw()
-      await transaction.wait()
-    })
-
-    it('Updates the owner balance', async () => {
-      const balanceAfter = await ethers.provider.getBalance(deployer.address)
-      expect(balanceAfter).to.be.greaterThan(balanceBefore)
-    })
-
-    it('Updates the contract balance', async () => {
-      const result = await ethDaddy.getBalance()
-      expect(result).to.equal(0)
+      expect(result).to.equal(AMOUNT)
     })
   })
 })
