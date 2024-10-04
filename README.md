@@ -1,4 +1,4 @@
-# ETH Daddy 
+# Web-3.0-Domain_Site
 
 ## Technology Stack & Tools
 
